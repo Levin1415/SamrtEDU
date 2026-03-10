@@ -59,6 +59,35 @@ async def save_assessment(
         "message": "Assessment saved successfully"
     }
 
+@router.get("/teacher")
+async def get_teacher_assessments(
+    current_user = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get all assessments created by the current teacher"""
+    if current_user.role != "teacher":
+        raise HTTPException(status_code=403, detail="Only teachers can access this endpoint")
+    
+    result = await db.execute(
+        select(Assessment)
+        .where(Assessment.teacher_id == current_user.id)
+        .order_by(Assessment.created_at.desc())
+    )
+    
+    assessments = result.scalars().all()
+    
+    return [{
+        "id": a.id,
+        "_id": a.id,
+        "teacher_id": a.teacher_id,
+        "subject": a.subject,
+        "topic": a.topic,
+        "grade": a.grade,
+        "questions": a.questions,
+        "assigned_to": a.assigned_to,
+        "created_at": a.created_at
+    } for a in assessments]
+
 @router.get("")
 async def get_assessments(
     current_user = Depends(get_current_user),
@@ -72,21 +101,21 @@ async def get_assessments(
         )
     else:
         # Student: get assessments assigned to them or "all"
-        # Use PostgreSQL JSON operators for proper JSON array searching
-        from sqlalchemy import cast, String, or_, func
+        # For JSON type, we need to convert to text and use LIKE or use a simpler approach
+        from sqlalchemy import cast, String, or_, func, text
+        
+        # Get all assessments and filter in Python since JSON operators are limited
         result = await db.execute(
-            select(Assessment)
-            .where(
-                or_(
-                    func.jsonb_array_length(Assessment.assigned_to) == 0,
-                    Assessment.assigned_to.op('@>')(cast([current_user.id], type_=Assessment.assigned_to.type)),
-                    Assessment.assigned_to.op('@>')(cast(["all"], type_=Assessment.assigned_to.type))
-                )
-            )
-            .order_by(Assessment.created_at.desc())
+            select(Assessment).order_by(Assessment.created_at.desc())
         )
-    
-    assessments = result.scalars().all()
+        all_assessments = result.scalars().all()
+        
+        # Filter assessments assigned to current user or "all"
+        assessments = []
+        for a in all_assessments:
+            assigned_to = a.assigned_to if isinstance(a.assigned_to, list) else []
+            if len(assigned_to) == 0 or current_user.id in assigned_to or "all" in assigned_to:
+                assessments.append(a)
     
     return [{
         "id": a.id,

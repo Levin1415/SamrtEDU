@@ -19,7 +19,16 @@ export const lessonsAPI = {
 
   // Generate full lesson plan with AI
   generateLessonPlan: async (data) => {
-    const response = await api.post('/lessons/generate', data);
+    // Transform frontend data to match backend schema
+    const payload = {
+      subject: data.subject,
+      grade: data.grade,
+      topic: data.topic,
+      duration_weeks: Math.ceil((data.duration || 60) / 60 / 5), // Convert minutes to weeks (assuming 5 hours per week)
+      learning_objectives: data.objectives ? data.objectives.split('\n').filter(obj => obj.trim()) : [],
+      teaching_style: data.teaching_style || 'Interactive'
+    };
+    const response = await api.post('/lessons/generate', payload);
     return response.data;
   },
 

@@ -13,6 +13,31 @@ from datetime import datetime
 
 router = APIRouter(prefix="/api/lessons", tags=["lessons"])
 
+@router.post("/generate")
+async def generate(request: LessonPlanRequest, current_user = Depends(get_current_teacher)):
+    """Generate lesson plan - alias for generate-full"""
+    try:
+        result = await generate_full_lesson_plan(
+            request.subject,
+            request.grade,
+            request.topic,
+            request.duration_weeks,
+            request.learning_objectives,
+            request.teaching_style
+        )
+        
+        return {
+            "content": result.get("overview", ""),
+            "time_slots": result.get("weeks", []),
+            "success": True
+        }
+    
+    except Exception as e:
+        import traceback
+        print(f"Error generating lesson plan: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Failed to generate lesson plan: {str(e)}")
+
 @router.post("/generate-full")
 async def generate_full(request: LessonPlanRequest, current_user = Depends(get_current_teacher)):
     try:

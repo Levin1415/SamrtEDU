@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const StatCard = ({ icon, title, value, color = 'primary' }) => {
+const StatCard = ({ icon: Icon, title, value, color = 'primary' }) => {
   const colorClasses = {
     primary: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300',
     accent: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-300',
@@ -11,9 +11,6 @@ const StatCard = ({ icon, title, value, color = 'primary' }) => {
     green: 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300',
     orange: 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-300',
   };
-
-  // Handle both component and JSX element
-  const IconComponent = typeof icon === 'function' ? icon : null;
 
   return (
     <motion.div
@@ -27,7 +24,7 @@ const StatCard = ({ icon, title, value, color = 'primary' }) => {
           <p className="text-3xl font-bold text-gray-900 dark:text-white">{value}</p>
         </div>
         <div className={`p-4 rounded-2xl ${colorClasses[color]}`}>
-          {IconComponent ? <IconComponent size={28} /> : icon}
+          <Icon size={28} />
         </div>
       </div>
     </motion.div>

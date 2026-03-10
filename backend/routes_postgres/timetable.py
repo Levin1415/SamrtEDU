@@ -14,6 +14,52 @@ import uuid
 
 router = APIRouter(prefix="/api/timetable", tags=["timetable"])
 
+@router.get("")
+async def get_user_timetable(
+    current_user = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get timetable for the current user"""
+    result = await db.execute(
+        select(Timetable).where(Timetable.user_id == current_user.id)
+    )
+    timetables = result.scalars().all()
+    
+    slots = [{
+        "id": t.id,
+        "day": t.day,
+        "start_time": t.start_time,
+        "end_time": t.end_time,
+        "subject": t.subject,
+        "room": t.room,
+        "lecturer": t.lecturer
+    } for t in timetables]
+    
+    return {"slots": slots}
+
+@router.get("/teacher")
+async def get_teacher_timetable(
+    current_user = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get timetable for the current teacher"""
+    result = await db.execute(
+        select(Timetable).where(Timetable.user_id == current_user.id)
+    )
+    timetables = result.scalars().all()
+    
+    slots = [{
+        "id": t.id,
+        "day": t.day,
+        "start_time": t.start_time,
+        "end_time": t.end_time,
+        "subject": t.subject,
+        "room": t.room,
+        "lecturer": t.lecturer
+    } for t in timetables]
+    
+    return {"slots": slots}
+
 @router.get("/{user_id}")
 async def get_timetable(
     user_id: str,

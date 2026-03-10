@@ -45,25 +45,25 @@ const Dashboard = () => {
           <StatCard
             title="Total Students"
             value={stats?.totalStudents || 0}
-            icon={<Users size={24} />}
+            icon={Users}
             color="blue"
           />
           <StatCard
             title="Active Assessments"
             value={stats?.activeAssessments || 0}
-            icon={<FileText size={24} />}
+            icon={FileText}
             color="green"
           />
           <StatCard
             title="Lesson Plans"
             value={stats?.lessonPlans || 0}
-            icon={<Calendar size={24} />}
+            icon={Calendar}
             color="orange"
           />
           <StatCard
             title="Avg Class Score"
             value={`${stats?.averageScore || 0}%`}
-            icon={<TrendingUp size={24} />}
+            icon={TrendingUp}
             color="purple"
           />
         </div>

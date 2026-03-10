@@ -8,13 +8,13 @@ export const timetableAPI = {
   // Get user's timetables
   getTimetables: async () => {
     const response = await api.get('/timetable');
-    return response.data;
+    return response.data.slots || [];
   },
 
   // Get teacher's timetables
   getTeacherTimetables: async () => {
     const response = await api.get('/timetable/teacher');
-    return response.data;
+    return response.data.slots || [];
   },
 
   // Get single timetable entry

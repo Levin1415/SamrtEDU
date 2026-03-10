@@ -8,7 +8,7 @@ export const scheduleAPI = {
   // Get user's schedules
   getSchedules: async () => {
     const response = await api.get('/schedule');
-    return response.data;
+    return response.data.blocks || [];
   },
 
   // Get single schedule

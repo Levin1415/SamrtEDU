@@ -14,6 +14,58 @@ import uuid
 
 router = APIRouter(prefix="/api/schedule", tags=["schedule"])
 
+@router.get("")
+async def get_user_schedule(
+    current_user = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get schedule for the current user"""
+    result = await db.execute(
+        select(Schedule).where(Schedule.user_id == current_user.id)
+    )
+    schedules = result.scalars().all()
+    
+    blocks = [{
+        "id": s.id,
+        "subject": s.subject,
+        "topic": s.topic,
+        "date": s.date,
+        "start_time": s.start_time,
+        "end_time": s.end_time,
+        "priority": s.priority,
+        "color": s.color
+    } for s in schedules]
+    
+    return {"blocks": blocks}
+
+@router.get("/daily")
+async def get_daily_schedule(
+    date: str,
+    current_user = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get schedule for a specific date"""
+    result = await db.execute(
+        select(Schedule).where(
+            Schedule.user_id == current_user.id,
+            Schedule.date == date
+        )
+    )
+    schedules = result.scalars().all()
+    
+    blocks = [{
+        "id": s.id,
+        "subject": s.subject,
+        "topic": s.topic,
+        "date": s.date,
+        "start_time": s.start_time,
+        "end_time": s.end_time,
+        "priority": s.priority,
+        "color": s.color
+    } for s in schedules]
+    
+    return {"blocks": blocks}
+
 @router.post("/ai-optimize")
 async def ai_optimize(request: AIScheduleRequest, current_user = Depends(get_current_user)):
     try:

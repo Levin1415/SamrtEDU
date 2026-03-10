@@ -8,7 +8,7 @@ export const badgesAPI = {
   // Get user's badges
   getBadges: async () => {
     const response = await api.get('/badges');
-    return response.data;
+    return response.data.badges || [];
   },
 
   // Get badge statistics
