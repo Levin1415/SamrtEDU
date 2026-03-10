@@ -34,7 +34,7 @@ A complete, production-ready web application for intelligent academic planning, 
 - Google Gemini API
 
 ### Database
-- MongoDB (local instance)
+- SQL (postgresql)
 
 ## 📋 Prerequisites
 
