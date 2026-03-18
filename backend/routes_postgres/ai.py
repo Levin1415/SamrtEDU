@@ -12,6 +12,44 @@ from database_postgres import get_db, ChatHistory
 from middleware.auth_middleware_postgres import get_current_user
 from datetime import datetime
 import io
+# region agent log
+import json as _json
+import time as _time
+from pathlib import Path as _Path
+
+# Use explicit workspace-root path so logs always write.
+_DEBUG_LOG_PATHS = [
+    _Path(r"c:\Users\panda\Desktop\Kiro\.cursor\debug-d379c9.log"),
+    _Path(r"c:\Users\panda\Desktop\Kiro\debug-d379c9.log"),
+]
+
+def _alog(hypothesis_id: str, location: str, message: str, data: dict):
+    try:
+        payload = {
+            "sessionId": "d379c9",
+            "runId": "pre-fix",
+            "hypothesisId": hypothesis_id,
+            "location": location,
+            "message": message,
+            "data": data,
+            "timestamp": int(_time.time() * 1000),
+        }
+        line = _json.dumps(payload, ensure_ascii=False) + "\n"
+        for p in _DEBUG_LOG_PATHS:
+            try:
+                p.parent.mkdir(parents=True, exist_ok=True)
+                with open(p, "a", encoding="utf-8") as f:
+                    f.write(line)
+            except Exception:
+                pass
+    except Exception:
+        pass
+# endregion agent log
+
+# region agent log
+# Emit a one-time log on module import to prove this code is loaded
+_alog("H0", "backend/routes_postgres/ai.py:import", "module loaded", {"logPaths": [str(p) for p in _DEBUG_LOG_PATHS]})
+# endregion agent log
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
 
@@ -22,13 +60,29 @@ async def chat(
     db: AsyncSession = Depends(get_db)
 ):
     try:
-        question_type = await detect_question_type(request.message)
+        _alog("H1", "backend/routes_postgres/ai.py:chat:entry", "chat request received", {
+            "hasUser": current_user is not None,
+            "messageLen": len(request.message) if request and request.message else None,
+            "language": request.language,
+            "historyLen": len(request.history) if request and request.history else 0,
+        })
+        # Run detect_question_type but don't let it crash the chat
+        try:
+            question_type = await detect_question_type(request.message)
+        except Exception:
+            question_type = "Unknown"
         
+        _alog("H1", "backend/routes_postgres/ai.py:chat:before_gemini", "calling chat_with_gemini", {
+            "questionType": question_type,
+        })
         response_text = await chat_with_gemini(
             request.message,
             request.language,
             [msg.dict() for msg in request.history]
         )
+        _alog("H1", "backend/routes_postgres/ai.py:chat:after_gemini", "chat_with_gemini returned", {
+            "responseLen": len(response_text) if isinstance(response_text, str) else None,
+        })
         
         # Save user message
         user_message = ChatHistory(
@@ -55,6 +109,10 @@ async def chat(
         return ChatResponse(response=response_text, question_type=question_type)
     
     except Exception as e:
+        _alog("H2", "backend/routes_postgres/ai.py:chat:exception", "chat handler exception", {
+            "excType": type(e).__name__,
+            "excMsg": str(e)[:500],
+        })
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/transcribe")

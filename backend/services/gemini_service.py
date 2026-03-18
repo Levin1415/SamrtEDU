@@ -1,11 +1,55 @@
 import google.generativeai as genai
 from config_postgres import settings
 import json
+# region agent log
+import time as _time
+from pathlib import Path as _Path
+
+# Use explicit workspace-root path so logs always write.
+_DEBUG_LOG_PATHS = [
+    _Path(r"c:\Users\panda\Desktop\Kiro\.cursor\debug-d379c9.log"),
+    _Path(r"c:\Users\panda\Desktop\Kiro\debug-d379c9.log"),
+]
+
+def _alog(hypothesis_id: str, location: str, message: str, data: dict):
+    try:
+        payload = {
+            "sessionId": "d379c9",
+            "runId": "pre-fix",
+            "hypothesisId": hypothesis_id,
+            "location": location,
+            "message": message,
+            "data": data,
+            "timestamp": int(_time.time() * 1000),
+        }
+        line = json.dumps(payload, ensure_ascii=False) + "\n"
+        for p in _DEBUG_LOG_PATHS:
+            try:
+                p.parent.mkdir(parents=True, exist_ok=True)
+                with open(p, "a", encoding="utf-8") as f:
+                    f.write(line)
+            except Exception:
+                pass
+    except Exception:
+        pass
+# endregion agent log
+
+# region agent log
+# Emit a one-time log on module import to prove this code is loaded
+_alog("H0", "backend/services/gemini_service.py:import", "module loaded", {"logPaths": [str(p) for p in _DEBUG_LOG_PATHS]})
+# endregion agent log
 
 genai.configure(api_key=settings.GEMINI_API_KEY)
 
 async def chat_with_gemini(message: str, language: str, history: list) -> str:
     try:
+        _alog("H1", "backend/services/gemini_service.py:chat_with_gemini:entry", "gemini chat start", {
+            "hasGeminiKey": bool(getattr(settings, "GEMINI_API_KEY", None)),
+            "model": "gemini-1.5-pro",
+            "messageLen": len(message) if isinstance(message, str) else None,
+            "language": language,
+            "historyLen": len(history) if isinstance(history, list) else None,
+        })
         model = genai.GenerativeModel('gemini-1.5-pro')
         
         system_prompt = f"""You are an intelligent academic tutor. Respond in {language}. 
@@ -23,6 +67,10 @@ Format your responses with proper structure and markdown when appropriate."""
         
         return response.text
     except Exception as e:
+        _alog("H1", "backend/services/gemini_service.py:chat_with_gemini:exception", "gemini chat exception", {
+            "excType": type(e).__name__,
+            "excMsg": str(e)[:500],
+        })
         raise Exception(f"Gemini chat failed: {str(e)}")
 
 async def generate_full_lesson_plan(subject: str, grade: str, topic: str, duration_weeks: int, objectives: list, style: str) -> dict:

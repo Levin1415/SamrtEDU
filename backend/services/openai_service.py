@@ -1,22 +1,26 @@
 from openai import OpenAI
 from config_postgres import settings
 import json
+import asyncio
+from functools import partial
 
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 async def transcribe_audio(audio_file):
     try:
-        transcript = client.audio.transcriptions.create(
+        loop = asyncio.get_event_loop()
+        transcript = await loop.run_in_executor(None, lambda: client.audio.transcriptions.create(
             model="whisper-1",
             file=audio_file
-        )
+        ))
         return transcript.text
     except Exception as e:
         raise Exception(f"Whisper transcription failed: {str(e)}")
 
 async def detect_question_type(question: str) -> str:
     try:
-        response = client.chat.completions.create(
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(None, lambda: client.chat.completions.create(
             model="gpt-4o",
             messages=[
                 {"role": "system", "content": "Classify this question into one of: Conceptual, Factual, Application, Creative, Procedural. Return only the label."},
@@ -24,7 +28,7 @@ async def detect_question_type(question: str) -> str:
             ],
             temperature=0.3,
             max_tokens=20
-        )
+        ))
         return response.choices[0].message.content.strip()
     except Exception as e:
         return "Unknown"

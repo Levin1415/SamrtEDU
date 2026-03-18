@@ -1,6 +1,9 @@
 import api from './axios';
 
 export const sendChatMessage = async (message, language, history) => {
+  // #region agent log
+  fetch('http://127.0.0.1:7894/ingest/98cc3b66-e588-4eda-b3c4-a74dfe885cfd',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d379c9'},body:JSON.stringify({sessionId:'d379c9',runId:'pre-fix',hypothesisId:'H3',location:'frontend/src/api/ai.js:sendChatMessage',message:'sendChatMessage called',data:{messageLen:typeof message==='string'?message.length:null,language,historyLen:Array.isArray(history)?history.length:null},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion agent log
   const response = await api.post('/ai/chat', { message, language, history });
   return response.data;
 };

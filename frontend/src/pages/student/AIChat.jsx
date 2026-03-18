@@ -3,7 +3,7 @@ import { Send, Mic, MicOff, Loader, Bot, User } from 'lucide-react';
 import Layout from '../../components/Layout';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
-import axios from 'axios';
+import { sendChatMessage, transcribeAudio as transcribeAudioAPI } from '../../api/ai';
 
 const AIChat = () => {
   const { user } = useAuth();
@@ -54,15 +54,15 @@ const AIChat = () => {
     setIsLoading(true);
 
     try {
-      const response = await axios.post('/api/ai/chat', {
-        message: input,
-        language: selectedLanguage,
-        history: messages.slice(-5) // Send last 5 messages for context
-      });
+      const data = await sendChatMessage(
+        input,
+        selectedLanguage,
+        messages.slice(-5).map(({ role, content }) => ({ role, content }))
+      );
 
       const aiMessage = {
         role: 'assistant',
-        content: response.data.response,
+        content: data.response,
         timestamp: new Date()
       };
 
@@ -119,15 +119,8 @@ const AIChat = () => {
   const transcribeAudio = async (audioBlob) => {
     try {
       setIsLoading(true);
-      const formData = new FormData();
-      formData.append('audio', audioBlob);
-      formData.append('language', selectedLanguage);
-
-      const response = await axios.post('/api/ai/transcribe', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-
-      setInput(response.data.text);
+      const data = await transcribeAudioAPI(audioBlob);
+      setInput(data.text || data.transcript || '');
       toast.success('Audio transcribed successfully!');
     } catch (error) {
       console.error('Transcription error:', error);
